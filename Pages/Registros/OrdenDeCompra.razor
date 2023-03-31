@@ -1,0 +1,592 @@
+@page "/ordencompra"
+
+@page "/ordencompra/{CompraId:int}"
+
+@* Orden de compra *@
+
+@inject AuthenticationStateProvider Authentication
+
+@inject IToastService Toast
+
+@using ProyectoFinal.BLL;
+
+<EditForm Model="compra"  OnValidSubmit="Comprar">
+    <DataAnnotationsValidator />
+
+    <a type="button" class="rz-border-radius-4 shadow border border-4 btn-lg btn btn-warning" data-toggle="tooltip"
+        data-placement="right" title="Regresar al registro de compra" href="compras">
+        <i class="oi oi-arrow-circle-left" />
+    </a>
+    <p/>
+
+    <div class="card-header justify-content-center text-center bg-ordendecompra2">
+        <h3 class="card-title">
+            Orden de Compras
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+                class="bi bi-bag-plus-fill" viewBox="0 0 16 16">
+                <path fill-rule="evenodd"
+                    d="M10.5 3.5a2.5 2.5 0 0 0-5 0V4h5v-.5zm1 0V4H15v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4h3.5v-.5a3.5 3.5 0 1 1 7 0zM8.5 8a.5.5 0 0 0-1 0v1.5H6a.5.5 0 0 0 0 1h1.5V12a.5.5 0 0 0 1 0v-1.5H10a.5.5 0 0 0 0-1H8.5V8z" />
+            </svg>
+        </h3>
+    </div>
+    <hr>
+    <div class="card-body">
+    <div class="row">
+
+                    <div class="form-group col-md-2">
+                        <label>Fecha</label>
+                        <InputDate @bind-Value="compra.Fecha" class="form-control col-8 bg-fechasColor" />
+                    </div>
+
+                    @*...................... Suplidor ......................*@
+
+                    <div class="form-group col-md-3">
+                        <label>
+                            Suplidor
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                        class="bi bi-truck" viewBox="0 0 16 16">
+                        <path
+                            d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5v-7zm1.294 7.456A1.999 1.999 0 0 1 4.732 11h5.536a2.01 2.01 0 0 1 .732-.732V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456zM12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12v4zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2zm9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2z" />
+                    </svg>
+                        </label>
+                        <select @bind="Detalle.SuplidorId" class="form-select text-14">
+                            <option value="0" disabled selected>Seleccione un suplidor</option>
+                            @foreach (Suplidor item in SuplidorList)
+                            {
+                                
+                                <option value="@item.SuplidorId">@item.Nombre </option>
+                                
+                            }
+                        </select>
+                    </div>
+                </div>
+                <hr>
+
+                <div class="row">
+                    @*...................... Articulo ......................*@
+                    <div class="form-group col-md-1"></div>
+
+                    <div class="form-group col-md-3">
+                        <label>
+                            Articulo
+                            <div class="oi oi-cart"></div>
+                        </label>
+                        <select @bind="ArticuloSeleccionado" class="form-select text-14"
+                            @onfocusout="ObtenerDatosArticulo">
+                            <option value="0" disabled selected> Seleccione un articulo </option>
+                            @foreach (Articulo item in ArticuloList)
+                            {
+                                if (item.Precio < 1 && item.CantidadRegistrada > 0){
+                                    <option value="@item.ArticuloId">@item.Nombre</option>
+                                }
+
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group col-md-2">
+                        <label>Unidades</label>
+                        <InputNumber @bind-Value="compra.Existencia" class="form-control col-5" readOnly="true" />
+                    </div>
+
+                    @*...................... Cantidad ......................*@
+
+                    <div class="form-group col-md-2">
+                        <label>
+                            Cantidad
+                            <div class="oi oi-layers"></div>
+                        </label>
+                        <InputNumber @bind-Value="Detalle.CantidadDetalle" class="form-control" />
+                    </div>
+
+                    @*...................... Boton Add ......................*@
+
+                    <div class="form-group col">
+                        <br>
+                        <button type="button" class="btn btn-añadir" @onclick="AgregarDetalle"
+                            title="Añadir articulos">
+                            <span class="oi oi-plus"> Add</span>
+                        </button>
+                    </div>
+                </div>
+                <br>
+                <table class="table table-light table-striped">
+                    <thead class="thead">
+                        <tr class="table text-center bg-ordendecompra2">
+                            <th class="border border-3">Código</th>
+
+                            <th class="border border-3">Descripcion</th>
+
+                            <th class="border border-3">Cantidad</th>
+
+                            <th class="border border-3">Costo RD $</th>
+
+                            <th class="border border-3">Importe RD $</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                         @if (compra.compraDetalle is not null)
+                        {
+                            @foreach (CompraDetalle item in compra.compraDetalle)
+                            {
+                                <tr class="text-center">
+                                    <td>@item.ArticuloId</td>
+                                    <td>@item.NombreDetalle</td>
+                                    <td>@item.CantidadDetalle</td>
+                                    <td>@item.PrecioDetalle</td>
+                                    <td>@item.ImporteDetalle</td>
+                                    <td>
+                                        <a class="btn-group-sm btn-close btn btn-group-lg btn-outline-danger"
+                                    @onclick="(() => RemoverDetalle(item))">
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        
+                    </tbody>
+                </table>
+                <hr>
+
+                @*...................... Metodo de pago ......................*@
+
+                <div class="row">
+
+                    <div class="form-group col-3">
+                        <label>
+                            Metodo de pago
+                            <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="currentColor"
+                                class="bi bi-cash-coin" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd"
+                                    d="M11 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm5-4a5 5 0 1 1-10 0 5 5 0 0 1 10 0z" />
+                                <path
+                                    d="M9.438 11.944c.047.596.518 1.06 1.363 1.116v.44h.375v-.443c.875-.061 1.386-.529 1.386-1.207 0-.618-.39-.936-1.09-1.1l-.296-.07v-1.2c.376.043.614.248.671.532h.658c-.047-.575-.54-1.024-1.329-1.073V8.5h-.375v.45c-.747.073-1.255.522-1.255 1.158 0 .562.378.92 1.007 1.066l.248.061v1.272c-.384-.058-.639-.27-.696-.563h-.668zm1.36-1.354c-.369-.085-.569-.26-.569-.522 0-.294.216-.514.572-.578v1.1h-.003zm.432.746c.449.104.655.272.655.569 0 .339-.257.571-.709.614v-1.195l.054.012z" />
+                                <path
+                                    d="M1 0a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4.083c.058-.344.145-.678.258-1H3a2 2 0 0 0-2-2V3a2 2 0 0 0 2-2h10a2 2 0 0 0 2 2v3.528c.38.34.717.728 1 1.154V1a1 1 0 0 0-1-1H1z" />
+                                <path d="M9.998 5.083 10 5a2 2 0 1 0-3.132 1.65 5.982 5.982 0 0 1 3.13-1.567z" />
+                            </svg>
+                        </label>
+                        <select @bind="PagoSeleccionado" class="form-select text-14" @onfocusout="ObtenerPago">
+                            <option value="0" disabled selected>Seleccionar</option>
+                            @foreach (var item in MetodoPagoList)
+                            {
+                                <option value="@item.PagoId">@item.Metodo</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group col-md-3"></div>
+
+                    @*...................... Subtotal ......................*@
+
+                    <div class="form-group col-md-2">
+                        <label>SubTotal</label>
+                        <InputNumber @bind-Value="compra.SubTotal" class="form-control col" readOnly="true" />
+                    </div>
+                    <br>
+
+                    @*...................... ITBIS ......................*@
+
+                    <div class="form-group col-md-2">
+                        <label>ITBIS</label>
+                        <InputNumber @bind-Value="compra.ITBIS" class="form-control col" readOnly="true" />
+                    </div>
+                    <br>
+
+                    @*...................... Total ......................*@
+
+                    <div class="form-group col-md-2">
+                        <label>Total</label>
+                        <InputNumber @bind-Value="compra.Total" class="form-control col" readOnly="true" />
+                    </div>
+                </div>
+
+                <hr>
+                @*...................... Pago Obtenido ......................*@
+
+                <div class="row">
+                    <div class="form-group col-2">
+                        <label>Pago Obtenido</label>
+                        <InputNumber @bind-Value="compra.PagoObtenido" @onfocusout="ObtenerDevuelta"
+                            class="form-control" />
+                    </div>
+
+                    @*...................... Devuelta ......................*@
+
+                    <div class="form-group col-md-2">
+                        <label>Devuelta</label>
+                        <InputNumber @bind-Value="compra.MontoRestante" class="form-control col-5" readOnly="true" />
+                    </div>
+                
+                 <div class="form-group col-md-3" style="margin: auto;">
+                    <a class="rz-border-radius-4 shadow border border-1 btn btn-lg btn btn-primary"
+                        data-toggle="tooltip" data-placement="right" title="Ingresar al reporte de compras"
+                        href="reportecompras"
+                        style="position: absolute;  right:40px; margin-right: 30; "
+                       <label>Compras</label>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                            class="bi bi-shop" viewBox="0 0 16 16">
+                            <path
+                                d="M2.97 1.35A1 1 0 0 1 3.73 1h8.54a1 1 0 0 1 .76.35l2.609 3.044A1.5 1.5 0 0 1 16 5.37v.255a2.375 2.375 0 0 1-4.25 1.458A2.371 2.371 0 0 1 9.875 8 2.37 2.37 0 0 1 8 7.083 2.37 2.37 0 0 1 6.125 8a2.37 2.37 0 0 1-1.875-.917A2.375 2.375 0 0 1 0 5.625V5.37a1.5 1.5 0 0 1 .361-.976l2.61-3.045zm1.78 4.275a1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0 1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0 1.375 1.375 0 1 0 2.75 0V5.37a.5.5 0 0 0-.12-.325L12.27 2H3.73L1.12 5.045A.5.5 0 0 0 1 5.37v.255a1.375 1.375 0 0 0 2.75 0 .5.5 0 0 1 1 0zM1.5 8.5A.5.5 0 0 1 2 9v6h1v-5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v5h6V9a.5.5 0 0 1 1 0v6h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1V9a.5.5 0 0 1 .5-.5zM4 15h3v-5H4v5zm5-5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-3zm3 0h-2v3h2v-3z" />
+                        </svg>
+                    </a>
+                </div>
+           
+                </div>
+                <br>
+
+                <hr>
+
+                @*...................... Botones ......................*@
+
+                <div class="card-footer">
+                    <div class="form-group text-center" display: inline-block>
+                        <button type="button" class="btn btn-lg btn-consulta" @onclick="Nuevo" title="Nuevo articulo">
+                        <span class="oi oi-file"> Nuevo</span>
+                    </button>
+                    <label>ㅤ</label>
+
+                    <button type="submit" class="btn btn-lg btn-Comprar"  title="Comprar articulo">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                            class="bi bi-bag-plus-fill" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                d="M10.5 3.5a2.5 2.5 0 0 0-5 0V4h5v-.5zm1 0V4H15v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V4h3.5v-.5a3.5 3.5 0 1 1 7 0zM8.5 8a.5.5 0 0 0-1 0v1.5H6a.5.5 0 0 0 0 1h1.5V12a.5.5 0 0 0 1 0v-1.5H10a.5.5 0 0 0 0-1H8.5V8z" />
+                        </svg><span> Comprar</span>
+                    </button>
+                    </div>
+                </div>
+            </div>
+      
+</EditForm>
+
+@code {
+
+#nullable disable // Para quitar el aviso de nulls
+
+    [Parameter]
+    public int CompraId { get; set; }
+
+    //-----------------------------------------------------------------------
+    Articulo articulo = new Articulo();
+
+    Compra compra = new Compra();
+    CompraDetalle Detalle = new CompraDetalle();
+    Suplidor suplidor = new Suplidor();
+
+    public int ArticuloSeleccionado { get; set; }
+
+    public int PagoSeleccionado { get; set; }
+
+    public decimal ITBIS { get; set; }
+
+    public string nombre { get; set; }
+
+    public decimal precio { get; set; }
+
+    List<Suplidor> SuplidorList = new List<Suplidor>();
+
+    List<Articulo> ArticuloList = new List<Articulo>();
+
+    List<Pago> MetodoPagoList = new List<Pago>();
+
+
+    //-----------------------------------------------------------------------
+
+    [Inject]
+    public CompraBLL compraBLL { get; set; } // Inyectando BLLS
+
+    [Inject]
+    public ArticuloBLL articuloBLL { get; set; } // Inyectando BLLS
+
+    [Inject]
+    public SuplidorBLL suplidorBLL { get; set; }
+
+    [Inject]
+    public PagoBLL pagoBLL { get; set; }
+
+
+    //-------------------------------------------------------------------------
+
+    protected override void OnInitialized()
+    {
+     
+        ArticuloList = articuloBLL.GetList(p => true);
+        SuplidorList = suplidorBLL.GetList(p => true);
+        MetodoPagoList = pagoBLL.GetList(c => true);
+
+        if (CompraId > 0)
+        {
+            compra.CompraId = CompraId;
+            this.Buscar();
+            
+        }
+    }
+
+    public void Nuevo() // Nueva venta
+    {
+        ArticuloSeleccionado = 0;
+        
+        ITBIS = 0;
+    
+      
+        articulo = new Articulo();
+        compra = new Compra();
+        Detalle = new CompraDetalle();
+
+        ArticuloList = articuloBLL.GetList(p => true);
+        SuplidorList = suplidorBLL.GetList(p => true);
+        MetodoPagoList = pagoBLL.GetList(c => true);
+    }
+
+    private void ObtenerDatosArticulo() // Obteniendo los datos del articulo seleccionado
+    {
+        Articulo auxArticulo = articuloBLL.Buscar(ArticuloSeleccionado);
+
+        if (auxArticulo != null)
+        {
+                                                 
+            articulo.CantidadRegistrada = auxArticulo.CantidadRegistrada; // Mostrando la cantidad de unidades del articulo seleccionado
+
+            compra.SubTotal = auxArticulo.Costo * Convert.ToDecimal(Detalle.CantidadDetalle); // Mostrando el subtotal de esa venta
+
+            ITBIS = compra.SubTotal * 18 / 100; // Calculo de ITBIS
+
+            compra.ITBIS = ITBIS;
+            
+            nombre = auxArticulo.Nombre;
+            
+            precio = auxArticulo.Costo;
+
+
+            compra.Existencia = auxArticulo.CantidadRegistrada - Detalle.CantidadDetalle;
+
+        }
+    }
+
+    private void ActualizandoUnidadesArticulo()
+    {
+        Articulo auxArticulo = articuloBLL.Buscar(ArticuloSeleccionado);
+
+        if (auxArticulo != null)
+        {
+            articulo.CantidadComprada = Detalle.CantidadDetalle;
+            
+        }
+    }
+
+
+    private void ObtenerDevuelta() // Devuelta que le sobra al cliente
+    {
+        Articulo auxArticulo = articuloBLL.Buscar(ArticuloSeleccionado);
+
+        if (auxArticulo != null)
+        {
+            if (compra.PagoObtenido > compra.Total)
+            {
+                compra.MontoRestante = compra.PagoObtenido - compra.Total;
+            }
+        }
+    }
+
+    private void ObtenerPago() // Metodos de pago
+    {
+        switch (PagoSeleccionado)
+        {
+            case 1:
+                compra.PagoObtenido = compra.Total;
+                compra.MontoRestante = compra.PagoObtenido - compra.Total;
+
+                break;
+
+            case 2:
+                // El pago lo podra ingresar la persona
+                compra.PagoObtenido = compra.PagoObtenido;
+
+                break;
+
+            case 3:
+                compra.PagoObtenido = compra.Total;
+                compra.MontoRestante = compra.PagoObtenido - compra.Total;
+
+                break;
+        }
+    }
+
+
+    public void Comprar() // Guardar compra
+    {
+        if (Detalle.SuplidorId == 0) // Validacion
+        {
+            Toast.ShowWarning("Tiene que seleccionar un suplidor.");
+            return;
+        }
+
+        if (ArticuloSeleccionado == 0) // Validacion
+        {
+            Toast.ShowWarning("Tiene que seleccionar un articulo.");
+            return;
+        }
+        if (Detalle.CantidadDetalle == 0) // Validacion
+        {
+            Toast.ShowWarning("Agregue la cantidad a comprar");
+            return;
+        }
+
+        if (PagoSeleccionado == 0) // Validacion
+        {
+            Toast.ShowWarning("Seleccione un metodo de pago");
+            return;
+        }
+
+        if (compra.PagoObtenido == 0) // Validacion
+        {
+            Toast.ShowWarning("Ingrese el monto de pago obtenido.");
+            return;
+        }
+
+
+        if (compra.PagoObtenido < compra.Total) // Validacion
+        {
+            Toast.ShowWarning("El pago debe ser mayor o igual al Total");
+            return;
+        }
+
+        bool guardado;
+
+        ObtenerDevuelta();
+        ActualizandoUnidadesArticulo();
+        ObtenerPago();
+        compra.UnidadesVendidas = Detalle.CantidadDetalle;
+        
+
+        guardado = compraBLL.Guardar(compra);
+
+        if (guardado)
+        {
+            guardado = true;
+            articulo = new Articulo();
+            compra = new Compra();
+            Detalle = new CompraDetalle();
+            ArticuloSeleccionado = 0;
+            PagoSeleccionado = 0;
+
+            Toast.ShowSuccess("Compra realizada correctamente");
+        }
+        else
+            Toast.ShowError("No fue posible guardar ");
+    }
+
+    protected void Buscar() // Buscar Ventas registradas
+    {
+        if (this.compra.CompraId > 0)
+        {
+            var Compra = compraBLL.Buscar(compra.CompraId);
+
+            if (compra != null)
+            {
+                compra = Compra;
+
+               
+            }
+            else
+            {
+                Toast.ShowWarning($"No existe una compra con este Id: {compra.CompraId}");
+            }
+        }
+    }
+
+    public void AgregarDetalle() // Agregar detalle de compra
+    {
+        if (Detalle.SuplidorId == 0) // Validacion
+        {
+            Toast.ShowWarning("Tiene que seleccionar un suplidor.");
+            return;
+        }
+
+        if (ArticuloSeleccionado == 0) // Validacion
+        {
+            Toast.ShowWarning("Tiene que seleccionar un articulo.");
+            return;
+        }
+
+        if (Detalle.CantidadDetalle == 0) // Validacion
+        {
+            Toast.ShowWarning("Ingrese la cantidad de unidades a comprar");
+            return;
+        }
+
+        if (Detalle.CantidadDetalle > articulo.CantidadRegistrada) // Validacion
+        {
+            Toast.ShowWarning("La cantidad a comprar no puede ser mayor que la existencia.");
+            return;
+        }
+        else
+        {
+            this.compra.compraDetalle.Add(new CompraDetalle
+                {
+                    ArticuloId = ArticuloSeleccionado,
+                    PagoId = PagoSeleccionado,
+                    NombreDetalle = nombre, // Agregando el detalle
+                    CantidadDetalle = Detalle.CantidadDetalle,
+                    PrecioDetalle = precio,
+                    ImporteDetalle = precio * Convert.ToDecimal(Detalle.CantidadDetalle)
+                });
+        }
+        
+        ObtenerDatosArticulo();
+
+       compra.Total += (compra.SubTotal + ITBIS); // Mostrando el total que hace esa compra
+    }
+
+    private void RemoverDetalle(CompraDetalle item) // Remover detalle
+    {
+        Toast.ShowInfo("Articulo removido");
+        this.compra.compraDetalle.Remove(item);
+
+        Articulo auxArticulo = articuloBLL.Buscar(ArticuloSeleccionado);
+
+        if (auxArticulo != null)
+        {
+            compra.Existencia = auxArticulo.CantidadRegistrada;
+        }
+    }
+
+
+    public void MostrarImporte() // Calculando el Total
+    {
+        Articulo auxArticulo = articuloBLL.Buscar(ArticuloSeleccionado);
+
+        if (auxArticulo != null)
+        {
+            precio = auxArticulo.Costo; // Precio del articulo seleccionado
+           
+        }
+    }
+
+    public void Eliminar() // Eliminar 
+    {
+        bool Eliminar;
+
+        Eliminar = compraBLL.Eliminar(compra.CompraId);
+
+        if (Eliminar)
+        {
+            
+            articulo = new Articulo();
+            compra = new Compra();
+            Detalle = new CompraDetalle();
+
+            Toast.ShowSuccess("Eliminado correctamente");
+        }
+        else
+            Toast.ShowError("No fue posible eliminar");
+    }
+}
+
+
+
+
+
+
+
+
